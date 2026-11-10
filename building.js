@@ -1256,12 +1256,11 @@ async function init(host) {
       let scrollQ = 0;
       function onScroll() {
         const r = host.getBoundingClientRect(), vh = window.innerHeight || 1;
-        scrollQ = shiftK > 0.5
-          ? Math.min(1, Math.max(0, window.scrollY / (r.height * 0.7)))                       // экран: hero сверху страницы
-          : Math.min(1, Math.max(0, (vh - r.top - r.height * 0.3) / (vh * 0.8)));             // телефон: сцена под текстом
+        scrollQ = Math.min(1, Math.max(0, window.scrollY / (shiftK > 0.5 ? r.height * 0.7 : 320))); // 0 при открытии страницы
       }
       // кадр: k — отдаление камеры (здание почти целиком в экране), dx/dy — сдвиг (место под текст слева), p — стадия «разрезa» (0 — монолит, 1 — один каркас)
       const FRAME = { k: 1.12, dx: -11, dy: -3.5, p: 0.1, ky: 0.55 }; // ky — высота камеры: меньше — вертикали здания меньше «заваливаются»
+      const FRAME_M = { k: 1.85, dx: -2, dy: -1.8, ky: 0.55 }; // телефон: здание целиком, по центру
       let shiftK = 1; // на узком экране (телефон) здание по центру, без сдвига под текст
 
       function aim(nx, ny) {
@@ -1343,15 +1342,16 @@ async function init(host) {
 
         // положение камеры: исходное движение сцены + отдаление и сдвиг, чтобы здание почти целиком помещалось в кадр
         const scrollZoom = state.progress * 6.0;
-        const lookX = 3.2 + state.smoothMouseX * 0.9 - state.progress * 0.6 + FRAME.dx * shiftK;
-        const lookY = 1.8 + state.smoothMouseY * 0.8 + state.progress * 1.0 + FRAME.dy;
+        const F = shiftK > 0.5 ? FRAME : FRAME_M;
+        const lookX = 3.2 + state.smoothMouseX * 0.9 - state.progress * 0.6 + F.dx * (shiftK > 0.5 ? shiftK : 1);
+        const lookY = 1.8 + state.smoothMouseY * 0.8 + state.progress * 1.0 + F.dy;
         const camX0 = -7.8 + state.smoothMouseX * 3.2 - state.progress * 1.4;
         const camY0 = -9.5 + state.smoothMouseY * 2.2 + state.progress * 3.2;
         const camZ0 = 34.0 - scrollZoom;
         camera.position.set(
-          lookX + (camX0 - 3.2) * FRAME.k,
-          lookY + (camY0 - 1.8) * FRAME.k * FRAME.ky,
-          camZ0 * FRAME.k
+          lookX + (camX0 - 3.2) * F.k,
+          lookY + (camY0 - 1.8) * F.k * F.ky,
+          camZ0 * F.k
         );
         camera.lookAt(lookX, lookY, 0);
 
